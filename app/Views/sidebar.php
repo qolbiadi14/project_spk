@@ -1,4 +1,3 @@
-
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <!-- Brand Logo -->
     <a href="index3.html" class="brand-link">
@@ -28,15 +27,15 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="./index2.html" class="nav-link">
+                            <a href="<?= base_url("perbandingan-kriteria")?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>Data Alternatif</p>
+                                <p>Perbandingan Kriteria</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="./index2.html" class="nav-link">
+                            <a href="<?= base_url("alternatif") ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>Nilai Alternatif</p>
+                                <p>Data Alternatif</p>
                             </a>
                         </li>
                     </ul>

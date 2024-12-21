@@ -1,8 +1,6 @@
 <?php
 
 namespace App\Controllers;
-
-use App\Models\KristeriaModel;
 use App\Models\KriteriaModel;
 
 class KriteriaController extends BaseController
