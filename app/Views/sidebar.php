@@ -27,7 +27,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url("perbandingan-kriteria")?>" class="nav-link">
+                            <a href="<?= base_url("perbandingan-kriteria") ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Perbandingan Kriteria</p>
                             </a>
@@ -38,27 +38,10 @@
                                 <p>Data Alternatif</p>
                             </a>
                         </li>
-                    </ul>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-tachometer-alt"></i>
-                        <p>
-                            Perhitungan Data
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="<?= base_url("drilldown") ?>" class="nav-link">
+                            <a href="<?= base_url("perangkingan-alternatif") ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>Perhitungan AHP</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="./index2.html" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Perhitungan SAW</p>
+                                <p>Perangkingan Alternatif</p>
                             </a>
                         </li>
                     </ul>

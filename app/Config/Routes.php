@@ -24,3 +24,7 @@ $routes->post('/alternatif/add', 'AlternatifController::add');
 $routes->get('/alternatif/delete/(:num)', 'AlternatifController::delete/$1');
 $routes->get('/alternatif/edit/(:num)', 'AlternatifController::edit/$1');
 $routes->post('/alternatif/update/(:num)', 'AlternatifController::update/$1');
+
+$routes->get('/perangkingan-alternatif', 'PerangkinganAlternatifController::index');
+$routes->post('/perangkingan-alternatif/store', 'PerangkinganAlternatifController::store');
+$routes->get('/perangkingan-alternatif/normalisasi', 'PerangkinganAlternatifController::normalisasi');
