@@ -67,7 +67,7 @@
                             </div>
                             <!-- /.card-header -->
                             <div class="card-body table-responsive p-0">
-                                <form id="nilaiForm" action="<?= base_url('perangkingan-alternatif') ?>" method="post">
+                                <form id="nilaiForm" action="<?= base_url('perangkingan-alternatif/store') ?>" method="post">
                                     <table class="table table-hover text-nowrap">
                                         <thead>
                                             <tr>

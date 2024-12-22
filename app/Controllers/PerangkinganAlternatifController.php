@@ -13,34 +13,6 @@ class PerangkinganAlternatifController extends BaseController
         $alternatifModel = new AlternatifModel();
         $kriteriaModel = new KriteriaModel();
         $nilaiAlternatifModel = new NilaiAlternatifModel();
-        
-        if ($this->request->getMethod() === 'post') {
-            $kriteria = $kriteriaModel->findAll();
-
-            foreach ($this->request->getPost() as $key => $value) {
-                if (strpos($key, 'criteria_') === 0) {
-                    if (!is_numeric($value) || $value <= 0) {
-                        session()->setFlashdata('error', 'Nilai harus berupa angka positif.');
-                        return redirect()->back()->withInput();
-                    }
-                    list(, $id_kriteria, $id_alternatif) = explode('_', $key);
-                    $existingRecord = $nilaiAlternatifModel->where(['id_alternatif' => $id_alternatif, 'id_kriteria' => $id_kriteria])->first();
-                    if ($existingRecord) {
-                        $nilaiAlternatifModel->update($existingRecord['id_nilai'], [
-                            'value' => $value
-                        ]);
-                    } else {
-                        $nilaiAlternatifModel->insert([
-                            'id_alternatif' => $id_alternatif,
-                            'id_kriteria' => $id_kriteria,
-                            'value' => $value
-                        ]);
-                    }
-                }
-            }
-
-            session()->setFlashdata('success', 'Berhasil menambahkan atau memperbarui nilai.');
-        }
 
         $alternatif = $alternatifModel->findAll();
         $nilai = $nilaiAlternatifModel->findAll();
@@ -86,20 +58,8 @@ class PerangkinganAlternatifController extends BaseController
             }
         }
 
-        $alternatifModel = new AlternatifModel();
-        $alternatif = $alternatifModel->findAll();
-        $nilai = $nilaiAlternatifModel->findAll();
-        $minMax = $this->getMinMaxValues($kriteria);
-
-        $data['alternatif'] = $alternatif;
-        $data['kriteria'] = $kriteria;
-        $data['nilai'] = $nilai;
-        $data['normalisasi'] = $this->calculateNormalization($alternatif, $kriteria, $minMax);
-        $data['terbobot'] = $this->calculateWeightedNormalization($data['normalisasi'], $kriteria);
-        $data['scores'] = $this->calculateScores($data['terbobot'], $kriteria);
-
         session()->setFlashdata('success', 'Berhasil menambahkan atau memperbarui nilai.');
-        return view('perangkingan_alternatif_view', $data);
+        return redirect()->to('/perangkingan-alternatif');
     }
 
     public function normalisasi()
@@ -145,9 +105,13 @@ class PerangkinganAlternatifController extends BaseController
         foreach ($alternatif as $alt) {
             foreach ($kriteria as $k) {
                 $nilai = $nilaiAlternatifModel->where(['id_alternatif' => $alt['id_alternatif'], 'id_kriteria' => $k['id_kriteria']])->first();
-                $value = $nilai['value'];
-                $normalizedValue = ($k['tipe_kriteria'] == 'benefit') ? $value / $minMax[$k['id_kriteria']]['max'] : $minMax[$k['id_kriteria']]['min'] / $value;
-                $normalisasi[$alt['id_alternatif']][$k['id_kriteria']] = $this->formatValue($normalizedValue);
+                if ($nilai) {
+                    $value = $nilai['value'];
+                    $normalizedValue = ($k['tipe_kriteria'] == 'benefit') ? $value / $minMax[$k['id_kriteria']]['max'] : $minMax[$k['id_kriteria']]['min'] / $value;
+                    $normalisasi[$alt['id_alternatif']][$k['id_kriteria']] = $this->formatValue($normalizedValue);
+                } else {
+                    $normalisasi[$alt['id_alternatif']][$k['id_kriteria']] = null;
+                }
             }
         }
 
@@ -191,10 +155,13 @@ class PerangkinganAlternatifController extends BaseController
         $ranking = [];
 
         foreach ($scores as $id_alternatif => $values) {
-            $ranking[] = [
-                'nama_alternatif' => $alternatif[array_search($id_alternatif, array_column($alternatif, 'id_alternatif'))]['nama_alternatif'],
-                'total' => $values['total']
-            ];
+            $index = array_search($id_alternatif, array_column($alternatif, 'id_alternatif'));
+            if ($index !== false && isset($alternatif[$index]['nama_alternatif'])) {
+                $ranking[] = [
+                    'nama_alternatif' => $alternatif[$index]['nama_alternatif'],
+                    'total' => $values['total']
+                ];
+            }
         }
 
         usort($ranking, function ($a, $b) {
