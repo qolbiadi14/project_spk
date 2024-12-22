@@ -67,7 +67,7 @@
                             </div>
                             <!-- /.card-header -->
                             <div class="card-body table-responsive p-0">
-                                <form id="nilaiForm" action="<?= base_url('perangkingan-alternatif/store') ?>" method="post">
+                                <form id="nilaiForm" action="<?= base_url('perangkingan-alternatif') ?>" method="post">
                                     <table class="table table-hover text-nowrap">
                                         <thead>
                                             <tr>
@@ -145,14 +145,51 @@
                                     <thead>
                                         <tr>
                                             <th>Nama Alternatif</th>
-                                            <th>Skor</th>
+                                            <?php foreach ($kriteria as $k): ?>
+                                                <th><?= $k['nama_kriteria'] ?></th>
+                                            <?php endforeach; ?>
+                                            <th>Total</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($scores as $id_alternatif => $score): ?>
+                                        <?php foreach ($scores as $id_alternatif => $values): ?>
                                             <tr>
                                                 <td><?= $alternatif[array_search($id_alternatif, array_column($alternatif, 'id_alternatif'))]['nama_alternatif'] ?></td>
-                                                <td><?= $score ?></td>
+                                                <?php foreach ($values as $id_kriteria => $score): ?>
+                                                    <?php if ($id_kriteria !== 'total'): ?>
+                                                        <td><?= $score ?></td>
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                                <td><?= $values['total'] ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- /.card-body -->
+                        </div>
+                        <!-- /.card -->
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Perangkingan Alternatif</h3>
+                            </div>
+                            <!-- /.card-header -->
+                            <div class="card-body table-responsive p-0">
+                                <table class="table table-hover text-nowrap">
+                                    <thead>
+                                        <tr>
+                                            <th>Rank</th>
+                                            <th>Nama Alternatif</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($ranking as $index => $rank): ?>
+                                            <tr>
+                                                <td><?= $index + 1 ?></td>
+                                                <td><?= $rank['nama_alternatif'] ?></td>
+                                                <td><?= $rank['total'] ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>
