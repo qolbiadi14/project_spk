@@ -16,7 +16,6 @@ class PerbandinganKriteriaController extends BaseController
         $data['pairwise_matrix'] = $this->getPairwiseComparisonMatrix($data['kriteria'], $data['bobot_kriteria']);
         $data['normalized_matrix'] = $this->getNormalizedMatrix($data['pairwise_matrix']);
         $data['consistency_ratio'] = $this->getConsistencyRatio($data['pairwise_matrix'], $data['normalized_matrix']);
-        $data['perbandingan_berpasangan'] = $this->generatePairwiseComparisonTable($data['kriteria'], $data['bobot_kriteria']);
         return view('perbandingan_kriteria_view', $data);
     }
 
@@ -122,24 +121,10 @@ class PerbandinganKriteriaController extends BaseController
         return $normalized_matrix;
     }
 
-    private function formatNumber($number)
-    {
-        return $number == intval($number) ? intval($number) : number_format($number, 4, '.', '');
-    }
-
     private function getConsistencyRatio($pairwise_matrix, $normalized_matrix)
     {
         $kriteriaModel = new KriteriaModel();
         $matrix = $pairwise_matrix['matrix'];
-        $eigenvector = array_map(function ($row) {
-            return array_sum($row) / count($row);
-        }, $normalized_matrix);
-
-        $lambda_max = array_sum(array_map(function ($row, $i) use ($eigenvector) {
-            return array_sum(array_map(function ($value, $j) use ($eigenvector) {
-                return $value * $eigenvector[$j];
-            }, $row, array_keys($row)));
-        }, $matrix, array_keys($matrix))) / count($matrix);
 
         $n = $kriteriaModel->countAll();
         $kriteria = $kriteriaModel->findAll();
@@ -165,51 +150,4 @@ class PerbandinganKriteriaController extends BaseController
         ];
     }
 
-    private function generatePairwiseComparisonTable($kriteria, $bobot_kriteria)
-    {
-        $thead = "<thead><tr><th>Kriteria</th>";
-        $tbody = "<tbody>";
-        $jumlah = [];
-
-        foreach ($kriteria as $i => $kiri) {
-            $thead .= "<th class='bg-blue-custom'>{$kiri['nama_kriteria']}</th>";
-            $row = "<tr><th class='bg-blue-custom'>{$kiri['nama_kriteria']}</th>";
-
-            foreach ($kriteria as $j => $kanan) {
-                if ($kiri['id_kriteria'] == $kanan['id_kriteria']) {
-                    $row .= "<td>1</td>";
-                    $jumlah[$j] = ($jumlah[$j] ?? 0) + 1;
-                    continue;
-                }
-
-                $bobot = array_filter($bobot_kriteria, function ($b) use ($kiri, $kanan) {
-                    return ($b['id_kriteria_kiri'] == $kiri['id_kriteria'] && $b['id_kriteria_kanan'] == $kanan['id_kriteria']) ||
-                        ($b['id_kriteria_kiri'] == $kanan['id_kriteria'] && $b['id_kriteria_kanan'] == $kiri['id_kriteria']);
-                });
-                $bobot = reset($bobot);
-                $value_cell = 1;
-                if ($bobot) {
-                    if ($bobot['id_kriteria_kiri'] == $kiri['id_kriteria']) {
-                        $value_cell = $bobot['is_reverse'] ? 1 / $bobot['value'] : $bobot['value'];
-                    } else {
-                        $value_cell = $bobot['is_reverse'] ? $bobot['value'] : 1 / $bobot['value'];
-                    }
-                }
-                $jumlah[$j] = ($jumlah[$j] ?? 0) + $value_cell;
-                $row .= "<td>{$this->formatNumber($value_cell)}</td>";
-            }
-            $row .= "</tr>";
-            $tbody .= $row;
-        }
-
-        $thead .= "</tr></thead>";
-        $tbody .= "</tbody>";
-        $tfoot = "<tfoot><tr><th>Jumlah</th>";
-        foreach ($jumlah as $value) {
-            $tfoot .= "<th>{$this->formatNumber($value)}</th>";
-        }
-        $tfoot .= "</tr></tfoot>";
-
-        return $thead . $tbody . $tfoot;
-    }
 }
