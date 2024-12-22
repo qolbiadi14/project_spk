@@ -9,6 +9,6 @@ class KriteriaModel extends Model
     protected $table      = 'kriteria';
     protected $primaryKey = 'id_kriteria';
     protected $useTimestamps = false;
-    protected $allowedFields = ['nama_kriteria', 'tipe_kriteria', 'bobot_kriteria'];
+    protected $allowedFields = ['nama_kriteria', 'tipe_kriteria', 'bobot_kriteria', 'nilai_w_kriteria'];
 
 }

@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Controllers;
+
 use App\Models\BobotKriteriaModel;
 use App\Models\KriteriaModel;
 
@@ -21,7 +22,8 @@ class PerbandinganKriteriaController extends BaseController
 
     public function add()
     {
-        $model = new BobotKriteriaModel();
+        $bobotModel = new BobotKriteriaModel();
+        $kriteriaModel = new KriteriaModel();
         $postData = $this->request->getPost();
 
         foreach ($postData as $key => $value) {
@@ -33,9 +35,9 @@ class PerbandinganKriteriaController extends BaseController
             }
 
             // Check if the record exists
-            $existingRecord = $model->where('id_kriteria_kiri', $kriteriaKiri)
-                                    ->where('id_kriteria_kanan', $kriteriaKanan)
-                                    ->first();
+            $existingRecord = $bobotModel->where('id_kriteria_kiri', $kriteriaKiri)
+                ->where('id_kriteria_kanan', $kriteriaKanan)
+                ->first();
 
             $data = [
                 'id_kriteria_kiri' => $kriteriaKiri,
@@ -46,11 +48,22 @@ class PerbandinganKriteriaController extends BaseController
 
             if ($existingRecord) {
                 // Update the existing record
-                $model->update($existingRecord['id_bobot_kriteria'], $data);
+                $bobotModel->update($existingRecord['id_bobot_kriteria'], $data);
             } else {
                 // Insert a new record
-                $model->insert($data);
+                $bobotModel->insert($data);
             }
+        }
+
+        // Calculate the normalized matrix and save the W values
+        $kriteria = $kriteriaModel->findAll();
+        $bobot_kriteria = $bobotModel->findAll();
+        $pairwise_matrix = $this->getPairwiseComparisonMatrix($kriteria, $bobot_kriteria);
+        $normalized_matrix = $this->getNormalizedMatrix($pairwise_matrix);
+
+        foreach ($normalized_matrix as $i => $row) {
+            $w_value = array_sum($row) / count($row);
+            $kriteriaModel->update($kriteria[$i]['id_kriteria'], ['nilai_w_kriteria' => $w_value]);
         }
 
         session()->setFlashdata('success', 'Perbandingan kriteria berhasil disimpan.');
@@ -70,11 +83,15 @@ class PerbandinganKriteriaController extends BaseController
                 } else {
                     $bobot = array_filter($bobot_kriteria, function ($b) use ($kiri, $kanan) {
                         return ($b['id_kriteria_kiri'] == $kiri['id_kriteria'] && $b['id_kriteria_kanan'] == $kanan['id_kriteria']) ||
-                               ($b['id_kriteria_kiri'] == $kanan['id_kriteria'] && $b['id_kriteria_kanan'] == $kiri['id_kriteria']);
+                            ($b['id_kriteria_kiri'] == $kanan['id_kriteria'] && $b['id_kriteria_kanan'] == $kiri['id_kriteria']);
                     });
                     $bobot = reset($bobot);
                     if ($bobot) {
-                        $value = $bobot['is_reverse'] ? 1 / $bobot['value'] : $bobot['value'];
+                        if ($bobot['id_kriteria_kiri'] == $kiri['id_kriteria']) {
+                            $value = $bobot['is_reverse'] ? 1 / $bobot['value'] : $bobot['value'];
+                        } else {
+                            $value = $bobot['is_reverse'] ? $bobot['value'] : 1 / $bobot['value'];
+                        }
                     } else {
                         $value = 1;
                     }
@@ -97,7 +114,7 @@ class PerbandinganKriteriaController extends BaseController
         foreach ($matrix as $i => $row) {
             $normalized_row = [];
             foreach ($row as $j => $value) {
-                $normalized_row[] = round($value / $jumlah[$j], 3);
+                $normalized_row[] = round($value / $jumlah[$j], 4);
             }
             $normalized_matrix[] = $normalized_row;
         }
@@ -107,11 +124,12 @@ class PerbandinganKriteriaController extends BaseController
 
     private function formatNumber($number)
     {
-        return $number == intval($number) ? intval($number) : number_format($number, 3);
+        return $number == intval($number) ? intval($number) : number_format($number, 4, '.', '');
     }
 
     private function getConsistencyRatio($pairwise_matrix, $normalized_matrix)
     {
+        $kriteriaModel = new KriteriaModel();
         $matrix = $pairwise_matrix['matrix'];
         $eigenvector = array_map(function ($row) {
             return array_sum($row) / count($row);
@@ -123,15 +141,27 @@ class PerbandinganKriteriaController extends BaseController
             }, $row, array_keys($row)));
         }, $matrix, array_keys($matrix))) / count($matrix);
 
-        $ci = ($lambda_max - count($matrix)) / (count($matrix) - 1);
+        $n = $kriteriaModel->countAll();
+        $kriteria = $kriteriaModel->findAll();
+        $total_sum = array_sum(array_map(function ($row, $i) use ($kriteria) {
+            $row_sum = array_sum(array_map(function ($value, $j) use ($kriteria) {
+                return $value * $kriteria[$j]['nilai_w_kriteria'];
+            }, $row, array_keys($row)));
+            return $row_sum / $kriteria[$i]['nilai_w_kriteria'];
+        }, $matrix, array_keys($matrix)));
+        $t = $total_sum / $n;
+
+        $ci = ($t - $n) / ($n - 1);
         $ri = [0, 0, 0.58, 0.9, 1.12, 1.24, 1.32, 1.41, 1.45, 1.49];
-        $cr = $ci / $ri[count($matrix)];
+        $cr = $ci / $ri[$n];
 
         return [
             'ci' => $ci,
-            'ri' => $ri[count($matrix)],
+            'ri' => $ri[$n],
             'cr' => $cr,
-            'is_consistent' => $cr < 0.1
+            'is_consistent' => $cr < 0.1,
+            'n' => $n,
+            't' => $t
         ];
     }
 
@@ -154,12 +184,16 @@ class PerbandinganKriteriaController extends BaseController
 
                 $bobot = array_filter($bobot_kriteria, function ($b) use ($kiri, $kanan) {
                     return ($b['id_kriteria_kiri'] == $kiri['id_kriteria'] && $b['id_kriteria_kanan'] == $kanan['id_kriteria']) ||
-                           ($b['id_kriteria_kiri'] == $kanan['id_kriteria'] && $b['id_kriteria_kanan'] == $kiri['id_kriteria']);
+                        ($b['id_kriteria_kiri'] == $kanan['id_kriteria'] && $b['id_kriteria_kanan'] == $kiri['id_kriteria']);
                 });
                 $bobot = reset($bobot);
                 $value_cell = 1;
                 if ($bobot) {
-                    $value_cell = $bobot['is_reverse'] ? 1 / $bobot['value'] : $bobot['value'];
+                    if ($bobot['id_kriteria_kiri'] == $kiri['id_kriteria']) {
+                        $value_cell = $bobot['is_reverse'] ? 1 / $bobot['value'] : $bobot['value'];
+                    } else {
+                        $value_cell = $bobot['is_reverse'] ? $bobot['value'] : 1 / $bobot['value'];
+                    }
                 }
                 $jumlah[$j] = ($jumlah[$j] ?? 0) + $value_cell;
                 $row .= "<td>{$this->formatNumber($value_cell)}</td>";

@@ -95,7 +95,7 @@
                                                         <th rowspan="2"><?= $kanan['nama_kriteria'] ?></th>
                                                     </tr>
                                                     <tr>
-                                                        <?php 
+                                                        <?php
                                                         $selectedValue = null;
                                                         foreach ($bobot_kriteria as $bobot) {
                                                             if ($bobot['id_kriteria_kiri'] == $kiri['id_kriteria'] && $bobot['id_kriteria_kanan'] == $kanan['id_kriteria']) {
@@ -154,7 +154,7 @@
                                             <tr>
                                                 <th><?= $kriteria[$i]['nama_kriteria'] ?></th>
                                                 <?php foreach ($row as $value) : ?>
-                                                    <td><?= $value == intval($value) ? intval($value) : number_format($value, 3) ?></td>
+                                                    <td><?= $value == intval($value) ? intval($value) : rtrim(rtrim(number_format($value, 4), '0'), '.') ?></td>
                                                 <?php endforeach; ?>
                                             </tr>
                                         <?php endforeach; ?>
@@ -163,7 +163,7 @@
                                         <tr>
                                             <th>Jumlah</th>
                                             <?php foreach ($pairwise_matrix['jumlah'] as $value) : ?>
-                                                <th><?= $value == intval($value) ? intval($value) : number_format($value, 3) ?></th>
+                                                <th><?= $value == intval($value) ? intval($value) : rtrim(rtrim(number_format($value, 4), '0'), '.') ?></th>
                                             <?php endforeach; ?>
                                         </tr>
                                     </tfoot>
@@ -188,22 +188,66 @@
                                             <?php foreach ($kriteria as $k) : ?>
                                                 <th><?= $k['nama_kriteria'] ?></th>
                                             <?php endforeach; ?>
+                                            <th>Rata-Rata</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php foreach ($normalized_matrix as $i => $row) : ?>
                                             <tr>
                                                 <th><?= $kriteria[$i]['nama_kriteria'] ?></th>
-                                                <?php foreach ($row as $value) : ?>
-                                                    <td><?= $value == intval($value) ? intval($value) : number_format($value, 3) ?></td>
+                                                <?php
+                                                $row_sum = 0;
+                                                foreach ($row as $value) :
+                                                    $row_sum += $value;
+                                                ?>
+                                                    <td><?= $value == intval($value) ? intval($value) : rtrim(rtrim(number_format($value, 4), '0'), '.') ?></td>
                                                 <?php endforeach; ?>
+                                                <td><?= rtrim(rtrim(number_format($row_sum / count($row), 4), '0'), '.') ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-                        <!-- /.card -->
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Hasil Perkalian Matrix</h3>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Kriteria</th>
+                                            <?php foreach ($kriteria as $k) : ?>
+                                                <th><?= $k['nama_kriteria'] ?></th>
+                                            <?php endforeach; ?>
+                                            <th>Jumlah</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($pairwise_matrix['matrix'] as $i => $row) : ?>
+                                            <tr>
+                                                <th><?= $kriteria[$i]['nama_kriteria'] ?></th>
+                                                <?php
+                                                $row_sum = 0;
+                                                foreach ($row as $j => $value) :
+                                                    $result = $value * $kriteria[$j]['nilai_w_kriteria'];
+                                                    $row_sum += $result;
+                                                ?>
+                                                    <td><?= rtrim(rtrim(number_format($result, 4), '0'), '.') ?></td>
+                                                <?php endforeach; ?>
+                                                <td><?= rtrim(rtrim(number_format($row_sum, 4), '0'), '.') ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -216,17 +260,42 @@
                             <div class="card-body">
                                 <table class="table table-bordered">
                                     <tbody>
+                                        <tr style="display: none;">
+                                            <td>Jumlah / Nilai W Kriteria</td>
+                                            <td>
+                                                <?php
+                                                $total_sum = 0;
+                                                foreach ($pairwise_matrix['matrix'] as $i => $row) :
+                                                    $row_sum = 0;
+                                                    foreach ($row as $j => $value) :
+                                                        $result = $value * $kriteria[$j]['nilai_w_kriteria'];
+                                                        $row_sum += $result;
+                                                    endforeach;
+                                                    $total_sum += $row_sum / $kriteria[$i]['nilai_w_kriteria'];
+                                                ?>
+                                                    <?= rtrim(rtrim(number_format($row_sum / $kriteria[$i]['nilai_w_kriteria'], 4), '0'), '.') ?><br>
+                                                <?php endforeach; ?>
+                                            </td>
+                                        </tr>
+                                        <tr style="display: none;">
+                                            <td>Total</td>
+                                            <td><?= rtrim(rtrim(number_format($total_sum, 4), '0'), '.') ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Nilai t</td>
+                                            <td><?= rtrim(rtrim(number_format($total_sum / $consistency_ratio['n'], 4), '0'), '.') ?></td>
+                                        </tr>
                                         <tr>
                                             <td>Consistency Index</td>
-                                            <td><?= $consistency_ratio['ci'] == intval($consistency_ratio['ci']) ? intval($consistency_ratio['ci']) : number_format($consistency_ratio['ci'], 3) ?></td>
+                                            <td><?= $consistency_ratio['ci'] == intval($consistency_ratio['ci']) ? intval($consistency_ratio['ci']) : number_format($consistency_ratio['ci'], 4) ?></td>
                                         </tr>
                                         <tr>
                                             <td>Random Consistency Index</td>
-                                            <td><?= $consistency_ratio['ri'] == intval($consistency_ratio['ri']) ? intval($consistency_ratio['ri']) : number_format($consistency_ratio['ri'], 3) ?></td>
+                                            <td><?= $consistency_ratio['ri'] == intval($consistency_ratio['ri']) ? intval($consistency_ratio['ri']) : number_format($consistency_ratio['ri'], 4) ?></td>
                                         </tr>
                                         <tr>
                                             <td>Consistency Ratio</td>
-                                            <td><?= $consistency_ratio['cr'] == intval($consistency_ratio['cr']) ? intval($consistency_ratio['cr']) : number_format($consistency_ratio['cr'], 3) ?></td>
+                                            <td><?= $consistency_ratio['cr'] == intval($consistency_ratio['cr']) ? intval($consistency_ratio['cr']) : number_format($consistency_ratio['cr'], 4) ?></td>
                                         </tr>
                                     </tbody>
                                 </table>
